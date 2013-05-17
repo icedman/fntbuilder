@@ -3,12 +3,15 @@ class Builder
 {
   // options
   boolean smooth = false;
+  boolean shadow = false;
+  int shadowOffset = 2;
   int charPadding = 4;
   int charSpacing = 0;
   int textColor = color(255,255,255);
   int outlineColor = color(255,0,0);
   float outlineWidth = 1.0;
-  int charTempImageSize = 40;
+  int charTempImageHeight = 80;
+  int charTempImageWidth = 40;
   
   // private
   int maxTop = 0;
@@ -150,9 +153,10 @@ class Builder
     
     for(int i=0;i<s.length();i++) {
       char c = s.charAt(i);
-      int cw = charTempImageSize;
+      int cw = charTempImageWidth;
+      int ch = charTempImageHeight;
         
-      PGraphics ig = createGraphics(cw,cw, JAVA2D);
+      PGraphics ig = createGraphics(cw,ch, JAVA2D);
       ig.beginDraw();
       ig.textFont(font);
       
@@ -161,8 +165,10 @@ class Builder
       else
         ig.noSmooth();  
       
-      ig.fill(color(0,0,0,200));
-      ig.text(c, ig.width/2 - cw/2 + 2, ig.height/2 + td - th/2 + 2);
+      if (shadow) {
+        ig.fill(color(0,0,0,200));
+        ig.text(c, ig.width/2 - cw/2 + shadowOffset, ig.height/2 + td - th/2 + shadowOffset);
+      }
 
       ig.fill(textColor);
       ig.text(c, ig.width/2 - cw/2, ig.height/2 + td - th/2);
@@ -244,13 +250,14 @@ class Builder
       if (n == null)
         continue;
       
+      ImageRect rect = rects[b.id];
+      
       if (drawOutline) {
         pg.stroke(255,255,0);
         pg.rect(n.x, n.y, b.w-1, b.h-1);
       }
       
       PImage img = images[b.id];
-      ImageRect rect = rects[b.id];
       int cx = img.width/2;
       int cy = img.height/2;
 
@@ -287,6 +294,47 @@ class Builder
     return img;
   }
   
+  PGraphics renderCharMap(int w, int h)
+  {
+    PGraphics img = createGraphics(w, h, JAVA2D);
+    img.beginDraw();
+    
+    int padd = 20;
+    
+    int xx = 0;
+    int yy = 0;
+    int minHeight = 0;
+    for(int i=0;i<images.length;i++) {
+      PImage charImage = images[i];
+      ImageRect rect = rects[i];
+      
+      if (minHeight < rect.h)
+        minHeight = rect.h;
+
+      xx += rect.w + padd + 8;
+      if (xx + rect.w + padd + 8> w) {
+        xx = 0;
+        yy += minHeight + 5;
+        minHeight = 0;
+        if (yy > h)
+          break;
+      }
+      
+    img.noFill();
+    img.stroke(255,255,0);
+      
+      img.rect(xx,yy,rect.w+padd-1,rect.h);
+      img.image(charImage, xx, yy);
+      
+      img.fill(255,0,0);
+      img.text("" + (char)rect.charId, xx + rect.w + 2, yy + 15);
+    }
+    
+    img.endDraw();
+    return img;
+    
+  }
+
   class FontChar
   {
     int id=32;

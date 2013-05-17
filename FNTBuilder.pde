@@ -3,7 +3,7 @@ PImage img;
 
 void setup()
 {
-  size(700,600);
+  size(1024,512);
                     
   Builder builder = new Builder();
   builder.init(256,256,"Marker Felt", 18);
@@ -22,13 +22,14 @@ void setup()
   builder.saveFNT("myfont");
   
   img = builder.renderAllPages(512,512,true);
+  //img = builder.renderCharMap(1024,512);
 }
 
 void draw()
 {
   background(50,50,50);
   noSmooth();
-  scale(2,2);
+  //scale(2,2);
   image(img, 0, 0);
 }
 

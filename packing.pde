@@ -67,7 +67,7 @@ class Packer
     return null;
   }
   
-  // todo -- sort largest to smallest
+  // todo -- sort largest to smallest (height)
   
   Node[] sortBlocks(Node blocks[])
   {
@@ -75,7 +75,8 @@ class Packer
      for(int j=i+1; j<blocks.length-1; j++) {
       Node n1 = blocks[i];
       Node n2 = blocks[j];
-      if (n1.area() < n2.area()) {
+      //if (n1.area() < n2.area()) {
+      if (n1.h < n2.h) {
           blocks[i] = n2;
           blocks[j] = n1;
       }
