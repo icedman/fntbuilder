@@ -10,8 +10,8 @@ class Builder
   int textColor = color(255,255,255);
   int outlineColor = color(255,0,0);
   float outlineWidth = 1.0;
-  int charTempImageHeight = 80;
-  int charTempImageWidth = 40;
+  int charTempImageHeight = 100;
+  int charTempImageWidth = 100;
   
   // private
   int maxTop = 0;
@@ -19,6 +19,7 @@ class Builder
   String fontFace;
   int fontSize;
   int lineHeight;
+  int spaceWidth;
   int base;
   
   Packer packer;
@@ -68,8 +69,20 @@ class Builder
          if (right == -1 || x > right)
            right = x;
        }
-       
       }
+    }
+    
+    if (top == -1) {
+      top = 0;
+    }
+    if (bottom == -1) {
+      bottom = top+1;
+    }
+    if (left == -1) {
+      left = 0;
+    }
+    if (right == -1) {
+      right = left + 1;
     }
     
     if (charPadding < 2)
@@ -82,15 +95,20 @@ class Builder
     
     if (imgRect.h > lineHeight)
       lineHeight = imgRect.h;
-    if (maxTop == 0 || maxTop > imgRect.y)
+    if (maxTop == 0 || (maxTop > imgRect.y && imgRect.y != 0))
       maxTop = imgRect.y;
       
     return imgRect;
   }
   
   void init(int w, int h, String fontFile, int size) {
-    if (fontFile != null)
-      font = createFont(fontFile, size);
+    
+    if (fontFile != null) {
+      if (fontFile.indexOf(".vlw") > 0)
+        font = loadFont(fontFile);
+      else
+        font = createFont(fontFile, size);
+    }
       
     fontFace = fontFile;
     fontSize = size;
@@ -145,18 +163,20 @@ class Builder
     
     int th = (int)textAscent();
     int td = (int)textDescent();
+    spaceWidth = (int)textWidth(" ");
     
     base = td;
     
     images = new PImage[s.length()];
     rects = new ImageRect[s.length()];
-    
+
+    int cw = charTempImageWidth;
+    int ch = charTempImageHeight;    
+    PGraphics ig = createGraphics(cw,ch, JAVA2D);
+      
     for(int i=0;i<s.length();i++) {
       char c = s.charAt(i);
-      int cw = charTempImageWidth;
-      int ch = charTempImageHeight;
-        
-      PGraphics ig = createGraphics(cw,ch, JAVA2D);
+
       ig.beginDraw();
       ig.textFont(font);
       
@@ -190,8 +210,9 @@ class Builder
       ig2.endDraw();
 
       images[i] = ig2;
-      
-      ig = null;
+    
+    
+      ig.clear();
     }
     
     nodes = new Packer.Node[images.length];
@@ -272,6 +293,9 @@ class Builder
   PGraphics renderAllPages(int w, int h, boolean drawoutline)
   {
     PGraphics img = createGraphics(w, h, JAVA2D);
+    
+    img.beginDraw();
+    
     Builder r = this;
     int xx = 0;
     int yy = 0;
@@ -279,6 +303,8 @@ class Builder
     while(r != null) {
       println("rendering page " + idx++);
       PImage page = r.render(drawoutline);
+      img.noFill();
+      img.rect(xx,yy,page.width,page.height);
       img.image(page, xx, yy);
       xx += page.width;
       if (xx + page.width > w) {
@@ -365,6 +391,8 @@ class Builder
       
       page++; 
       
+      int spaceAdvance = 0;
+      
       for(int i=0;i<r.nodes.length;i++) {
         Packer.Node b = r.nodes[i];
         if (b == null)
@@ -384,13 +412,18 @@ class Builder
         f.xoffset= 0;
         f.yoffset= lineHeight/2 - (maxTop - rect.y);
         f.xadvance=b.w - charPadding + charSpacing;
-        f.page=page;
+        f.page=page-1;
         f.chnl=0;
         
         s += "char id=" + f.id + " x=" + f.x + " y=" + f.y + " width=" + f.width + " height=" + f.height;
         s +=" xoffset=" + f.xoffset + " yoffset=" + (-(lineHeight/2) + f.yoffset) + " xadvance=" + f.xadvance + " page=" + f.page + " chnl=" + f.chnl + "\n";
         charCount++;
       } 
+      
+      // space
+      s += "char id=32 x=0 y=0 width=1 height=1";
+      s +=" xoffset=0 yoffset=0 xadvance=" + spaceWidth + " page=0 chnl=0\n";
+      charCount++;
       
       PImage img = r.render(false);
       img.save(fname);
